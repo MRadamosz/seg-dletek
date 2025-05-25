@@ -1,0 +1,23 @@
+Telepítse fel az Azure-ban működő Debian 12 server az alábbi szolgáltatásokat:
+
+Lépjen be a putty program segítségével.
+
+Váltson rendszergazda módba (sudo bash)
+
+Frissítse a csomagkezelőt (apt update)
+
+Telepítse fel az Azure-ban működő Debian 12 server az alábbi szolgáltatásokat:
+Webserver alkalmazást telepítése:
+Készítsen a kezdő oldalt, amin a Hello World 2024. 12. 11. Készítette: Vizsgazo Neve jelenjen meg.
+
+:-$ cd /var/www/html
+:/var/www/html$ sudo nano index.html
+:/var/www/html$ sudo apt install apache2
+:/var/www/html$ cd /var/www/html
+:/var/www/html$ sudo nano index.html
+
+Az oldal szerkesztőben:
+<title>Kezdő oldal</title>
+<h1>Hello World dátum</h1>
+<p>Készítette: Balog Ádám</p>
+
