@@ -1,0 +1,79 @@
+KAPCSOLÓ KONFIGURÁCIÓ:
+
+en
+conf t
+hostname OenVezetekneve
+line con 0
+password BMSzCVizsga
+login
+exit
+line vty 0 15
+password BMSzCVizsga
+login
+exit
+vlan 22
+exit
+interface range fastEthernet 0/1 - 24
+switchport mode access
+switchport access vlan 22
+exit
+interface fastEthernet 0/11
+switchport mode access
+switchport access vlan 10
+exit
+interface fastEthernet 0/10
+switchport mode trunk
+exit
+interface vlan 10
+ip address 10.VSZ.10.10 255.255.255.128
+no shutdown
+exit
+ip default-gateway 10.VSZ.10.1
+exit
+username admin password BMSzC
+ip domain-name pataky.lan
+line vty 0 3
+login local
+transport input ssh
+exit
+exit
+vlan 10
+name Pataky10
+exit
+exit
+vlan 20
+name Pataky20
+exit
+exit
+
+FORGALOMIRÁNYÍTÓ KONFIGURÁCIÓ:
+
+en
+conf t
+hostname BMSzCRouterVSZ
+line con 0
+password BMSzCVizsga
+login
+exit
+enable secret BMSzCEna
+interface gigabitEthernet 0/1
+ip address 192.168.11.13 255.255.255.0
+ipv6 address FE80::1 link-local
+ipv6 address FC00::1/64
+exit
+interface gigabitEthernet 0/0.10
+encapsulation dot1Q 10
+ip address 10.VSZ.10.1 255.255.255.128
+ipv6 address FE80::1 link-local
+ipv6 address FC10::1/64
+exit
+interface gigabitEthernet 0/0.20
+encapsulation dot1Q 20
+ip address 10.VSZ.20.1 255.255.255.128
+ipv6 address FE80::1 link-local
+ipv6 address FC20::1/64
+exit
+ip nat inside source list 1 interface gigabitEthernet 0/1 overload
+access-list 1 permit any
+ipv6 unicast-routing
+exit
