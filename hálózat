@@ -1,79 +1,316 @@
-KAPCSOLÓ KONFIGURÁCIÓ:
+1. ASA (Adaptive Security Appliance) tűzfal konfiguráció
+ASA-ba konfig:
+object network inside-net
+subnet 0.0.0.0 0.0.0.0
+nat (inside,outside) dynamic interface
+class-map inspection_default
+match default-inspection-traffic
+exit
+policy-map global_policy
+class inspection_default
+inspect icmp
+exit
+service-policy global_policy global
 
-en
-conf t
-hostname OenVezetekneve
-line con 0
-password BMSzCVizsga
-login
-exit
-line vty 0 15
-password BMSzCVizsga
-login
-exit
-vlan 22
-exit
-interface range fastEthernet 0/1 - 24
+Az ASA tűzfal Cisco eszköz, amely a hálózat biztonságát és forgalmának szabályozását látja el.
+
+b. Belső hálózati interfész (inside):
+Feltételezve, hogy a belső interfész az Ethernet0/1:
+
+ciscoasa(config)# interface Ethernet0/1
+ciscoasa(config-if)# nameif inside
+ciscoasa(config-if)# security-level 100
+ciscoasa(config-if)# ip address 10.10.0.VSZ 255.255.255.0
+ciscoasa(config-if)# no shutdown
+Miért?
+
+nameif inside → ez jelzi, hogy ez a belső (biztonságos) interfész.
+security-level 100 → a legmagasabb biztonsági szint, belső forgalom engedélyezett.
+ip address → a VLAN1 címe.
+
+c. DHCP beállítása a belső hálózatra:
+
+ciscoasa(config)# dhcpd address 10.10.0.120-10.10.0.140 inside
+ciscoasa(config)# dhcpd dns 192.168.100.120
+ciscoasa(config)# dhcpd enable inside
+Miért?
+Ez kiosztja a belső klienseknek a megadott IP-tartományból IP-címeket és DNS szerver címet.
+
+d. Külső interfész (outside):
+Feltételezve, hogy ez az Ethernet0/0:
+
+ciscoasa(config)# interface Ethernet0/0
+ciscoasa(config-if)# nameif outside
+ciscoasa(config-if)# security-level 0
+ciscoasa(config-if)# ip address 192.168.TSZ.X 255.255.255.0
+ciscoasa(config-if)# no shutdown
+(X = 10 + GSZ) → ez egy adott tanulói szám vagy gépszám.
+
+Miért?
+
+outside interfész → internet felőli, nem biztonságos.
+
+security-level 0 → legkevésbé megbízható.
+
+ip address → a VLAN2 címe.
+
+e. Alapértelmezett útvonal beállítása:
+
+ciscoasa(config)# route outside 0.0.0.0 0.0.0.0 192.168.TSZ.1
+Miért?
+Ez az útvonal biztosítja, hogy a tűzfal minden, nem helyi címre küldött csomagot a külső hálózat felé (internet) irányítsa.
+
+2. SOHO router konfigurálása
+a. Internet port DHCP-vel:
+Ez általában automatikus, de így is be lehet állítani:
+
+interface WAN
+ip address dhcp
+Miért?
+Hogy a WAN interfész automatikusan kapjon IP-t a szolgáltatótól.
+
+b. LAN IP-címtartomány:
+
+interface LAN
+ip address 192.168.VSZ.111 255.255.255.0
+
+c. DHCP tartomány:
+
+ip dhcp pool LANPOOL
+network 192.168.VSZ.0 255.255.255.0
+default-router 192.168.VSZ.111
+ip dhcp excluded-address 192.168.VSZ.1 192.168.VSZ.49
+ip dhcp excluded-address 192.168.VSZ.66 192.168.VSZ.254
+
+d. Wi-Fi SSID és biztonság:
+SSID: BMSzCVizsgaVSZ
+WPA2-PSK AES titkosítással, jelszó: PasswordBMSzCVSZ
+
+Általában GUI-n vagy így CLI-ben (függ a gyártótól):
+
+interface Dot11Radio0
+ssid BMSzCVizsgaVSZ
+authentication open
+authentication key-management wpa version 2
+wpa-psk ascii PasswordBMSzCVSZ
+encryption mode ciphers aes-ccm
+
+3. Switch konfiguráció
+a. Hostnév + konzol jelszó:
+
+Switch(config)# hostname Vezetekneve
+Vezetekneve(config)# line console 0
+Vezetekneve(config-line)# password BMSzCVizsga
+Vezetekneve(config-line)# login
+
+b. Nem használt portok VLAN 77-be:
+Feltételezve, hogy pl. fa0/5-től fa0/24 nem használt:
+
+interface range fa0/5 - 24
 switchport mode access
-switchport access vlan 22
-exit
-interface fastEthernet 0/11
-switchport mode access
-switchport access vlan 10
-exit
-interface fastEthernet 0/10
-switchport mode trunk
-exit
-interface vlan 10
-ip address 10.VSZ.10.10 255.255.255.128
+switchport access vlan 77
+shutdown
+c. Használt portok VLAN1-ben maradnak → nincs külön teendő, ez alapértelmezett.
+
+d. VLAN1 IP-cím beállítás:
+
+interface vlan 1
+ip address 192.168.VSZ.120 255.255.255.0
 no shutdown
-exit
-ip default-gateway 10.VSZ.10.1
-exit
-username admin password BMSzC
+e. Alapértelmezett átjáró:
+
+ip default-gateway 192.168.VSZ.1
+
+f. Felhasználó hozzáadása:
+
+username admin password Pataky
+
+g. IP domainnév:
+
 ip domain-name pataky.lan
-line vty 0 3
+
+h. RSA kulcs SSH-hoz:
+
+crypto key generate rsa
+1024
+
+i. SSH vonalak konfigurálása:
+
+line vty 0 4
 login local
 transport input ssh
+
+ACL minden IP-cím engedélyezésére:
+
+access-list 1 permit any
+
+NAT beállítás:
+
+ip nat inside source list 1 interface g0/1 overload
+Interfészek NAT irányainak kijelölése:
+
+interface g0/0.10
+ip nat inside
+
+interface g0/0.20
+ip nat inside
+
+interface g0/1
+ip nat outside
+
+j. IPv6 forgalomirányítás bekapcsolása
+
+ipv6 unicast-routing
+
+..vlan beállítás:
+
+vlan 11
+name Pataky11
 exit
-exit
-vlan 10
-name Pataky10
-exit
-exit
+interface range fa0/11 - 13
+switchport mode access
+switchport access vlan 11
+
 vlan 20
 name Pataky20
 exit
-exit
+interface range fa0/3 - 5
+switchport mode access
+switchport access vlan 20
 
-FORGALOMIRÁNYÍTÓ KONFIGURÁCIÓ:
+..VTP:
+vtp domain MERETES
+vtp mode client
 
-en
-conf t
-hostname BMSzCRouterVSZ
-line con 0
+vtp domain MERETES
+vtp mode server
+
+EtherChannel passzív mód (PO2 csatorna)
+
+interface range fa0/5 - 7
+channel-group 2 mode passive
+
+Bal oldal (Első) kapcsoló konfigurálása
+a. Készülék hosztneve + konzol jelszó
+
+hostname Vezetekneve-EGYIK
+line console 0
 password BMSzCVizsga
 login
+
+b. VTP tartományneve NETWORK és kliens mód
+
+vtp domain NETWORK
+vtp mode client
+
+c. EtherChannel passzív mód (PO2 csatorna)
+
+interface range fa0/5 - 7
+channel-group 2 mode passive
+
+d. PO2 trönk üzemmódban 802.1q keretezéssel
+
+interface port-channel 2
+switchport mode trunk
+switchport trunk encapsulation dot1q
+
+e. Nem használt portok a 52-es VLAN-ban
+
+interface range fa0/1 - 4, fa0/8 - 24
+switchport mode access
+switchport access vlan 52
+shutdown
+f. VLAN20 interfész IP-címe
+
+Például ha VSZ = 10:
+
+interface vlan 20
+ip address 192.168.10.70 255.255.255.0
+no shutdown
+
+g. Alapértelmezett átjáró beállítása
+
+ip default-gateway 192.168.10.1
+
+h. Felhasználó létrehozása admin névvel és jelszóval
+
+username admin password BMSzC
+
+i. IP tartománynév beállítása
+
+ip domain-name pataky.lan
+
+j. RSA kulcs generálása az SSH protokollhoz
+
+crypto rsa general-keys modulus 1024
+
+k. Távadminisztrációs vonalak beállítása SSH-hoz
+
+line vty 0 4
+transport input ssh
+login local
+
+2. Jobb oldal (Második) kapcsoló konfigurálása
+a. Készülék hosztneve + konzol jelszó
+
+hostname Vezetekneve-MASIK
+line console 0
+password BMSzCVizsga
+login
+
+b. VTP tartományneve NETWORK és server mód
+
+vtp domain NETWORK
+vtp mode server
+
+c. EtherChannel aktív mód (PO5 csatorna)
+
+interface range fa0/15 - 17
+channel-group 5 mode active
+
+d. PO5 trönk üzemmódban 802.1q keretezéssel
+
+interface port-channel 5
+switchport mode trunk
+switchport trunk encapsulation dot1q
+
+e. Nem használt portok a 52-es VLAN-ban
+
+interface range fa0/1 - 2, fa0/8 - 24
+switchport mode access
+switchport access vlan 52
+shutdown
+f. VLAN20 interfész IP-címe
+
+Például ha VSZ = 10:
+
+interface vlan 20
+ip address 192.168.10.71 255.255.255.0
+no shutdown
+
+g. Alapértelmezett átjáró beállítása
+
+ip default-gateway 192.168.10.1
+
+h. VLAN-ok létrehozása és port-hozzárendelése
+
+vlan 10
+name Pataky10
 exit
-enable secret BMSzCEna
-interface gigabitEthernet 0/1
-ip address 192.168.11.13 255.255.255.0
-ipv6 address FE80::1 link-local
-ipv6 address FC00::1/64
+interface range fa0/11 - 13
+switchport mode access
+switchport access vlan 10
+
+vlan 20
+name Pataky20
 exit
-interface gigabitEthernet 0/0.10
-encapsulation dot1Q 10
-ip address 10.VSZ.10.1 255.255.255.128
-ipv6 address FE80::1 link-local
-ipv6 address FC10::1/64
-exit
-interface gigabitEthernet 0/0.20
-encapsulation dot1Q 20
-ip address 10.VSZ.20.1 255.255.255.128
-ipv6 address FE80::1 link-local
-ipv6 address FC20::1/64
-exit
-ip nat inside source list 1 interface gigabitEthernet 0/1 overload
-access-list 1 permit any
-ipv6 unicast-routing
-exit
+interface range fa0/3 - 5
+switchport mode access
+switchport access vlan 20
+i. Dinamikus címosztás beállítása (DHCP)
+Címkészlet létrehozása:
+
+ip dhcp pool dehacepe
+network 192.168.10.100 255.255.255.0
+default-router 192.168.10.1
+dns-server 192.168.100.120
