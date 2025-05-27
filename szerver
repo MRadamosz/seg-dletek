@@ -9,6 +9,7 @@ Szerepkör kiválasztása:
 Jelöld be: Active Directory tartományi szolgáltatások
 A megjelenő párbeszédpanelen kattints az Szolgáltatások hozzáadása gombra.
 Tovább → Telepítés
+--------------------------------------------------------------------------
 Tartományvezérlővé alakítás:
 Telepítés után kattints a Sárga zászlóra (jobb felső sarok) → Ez a szerver tartományvezérlővé alakítása
 Új erdő létrehozása:
@@ -16,23 +17,25 @@ Válaszd: Új erdő hozzáadása
 Gyökértartomány neve: pl. ceg.local
 Jelszó beállítása a szolgáltatás-helyreállításhoz → Tovább → Telepítés
 Újraindítás után: A szerver tagja lesz a tartománynak, és tartományvezérlőként működik.
-
+------------------------------------------------------------------------------------------
 2.  Felhasználók és csoportok létrehozása
 Lépések:
 Start menü → Eszközök → Active Directory – felhasználók és számítógépek
 Navigálj a Users (Felhasználók) tárolóhoz.
+--------------------------------------------
 Új felhasználó:
 Jobb klikk → Új → Felhasználó
 Név: teszt.janos
 Bejelentkezési név: teszt.janos@ceg.local
 Állíts be jelszót, és vedd ki a pipát a „Felhasználó meg kell, hogy változtassa a jelszót az első bejelentkezéskor” opcióból, ha szükséges.
+----------------------------------------
 Új csoport:
 Jobb klikk → Új → Csoport
 Név: irodaiak
 Típus: Biztonsági
 Felhasználó csoporthoz adása:
 Jobb klikk a felhasználóra → Tulajdonságok → Tagja fül → Hozzáadás → irodaiak
-
+--------------------------------------------------------------------------------
 3.  Csoportházirend létrehozása és alkalmazása
 Lépések:
 Start → Eszközök → Csoportházirend-kezelés
@@ -40,12 +43,13 @@ Navigálj a ceg.local tartományhoz.
 Új GPO létrehozása:
 Jobb klikk a tartományon → Új létrehozása
 Név: Irodai korlátozások
+-----------------------------------------
 GPO szerkesztése:
 Jobb klikk → Szerkesztés
 Példa: Felhasználói beállítások → Vezérlőpult → Megjelenés → Rejtse el a Vezérlőpultot
 GPO linkelése csoporthoz (opcionális):
 A GPO csak az irodaiak csoportra vonatkozzon: használj biztonsági szűrést vagy WMI-szűrőt.
-
+-------------------------------------------------------------------------------------
 4. DHCP és DNS szolgáltatások konfigurálása
 DHCP:
 Szerepkör hozzáadása:
@@ -53,6 +57,7 @@ Szerverkezelő → Szerepkörök és szolgáltatások hozzáadása
 DHCP-szolgáltatás → Telepítés
 DHCP-kezelő megnyitása:
 Start → Eszközök → DHCP
+------------------------------------
 Új tartomány (scope) létrehozása:
 Jobb klikk az IPv4-re → Új tartomány
 Tartománynév: HelyiLAN
@@ -60,12 +65,13 @@ IP-címtartomány: pl. 192.168.1.100–192.168.1.200
 Alhálózati maszk: 255.255.255.0
 Átjáró: 192.168.1.1
 DNS kiszolgáló: 192.168.1.10 (ez a gép IP-je)
+-----------------------------------------
 DNS:
 A telepítés után automatikusan telepítve lett.
 DNS-kezelő → Start → Eszközök → DNS
 Ellenőrizd, hogy a tartományhoz tartozó elő- és visszafeloldási zónák létrejöttek-e.
 Szükség esetén hozz létre új A rekordot vagy CNAME bejegyzést.
-
+-------------------------------------------------------------
 5.  PowerShell szkript felhasználók létrehozására
 Nyisd meg a PowerShellt rendszergazdaként, majd készítsd el a következő szkriptet:
 powershell
@@ -79,7 +85,7 @@ New-ADUser – új felhasználó létrehozása
 -Name "teszt" – ez lesz a megjelenített név és a SamAccountName is
 -AccountPassword – beállítja a jelszót (itt: Jelszo123!)
 -Enabled $true – azonnal aktiválja a felhasználót
-
+------------------------------------------------------------------------------
 6.  Egyszerű VPN-szolgáltatás telepítése és konfigurálása
 VPN feladat (PPTP – Windows Server 2019)
  Feladat:
