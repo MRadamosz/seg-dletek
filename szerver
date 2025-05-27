@@ -1,202 +1,117 @@
 1. Active Directory tartományvezérlő telepítése
 Lépések:
 Szerverkezelő megnyitása:
-
 Start menü → Szerverkezelő (Server Manager)
-
 Szerepkörök és szolgáltatások hozzáadása:
-
 Felügyelet → Szerepkörök és szolgáltatások hozzáadása
-
 Kattints a Tovább gombokra, amíg a Szerepkörök kiválasztása részhez érsz.
-
 Szerepkör kiválasztása:
-
 Jelöld be: Active Directory tartományi szolgáltatások
-
 A megjelenő párbeszédpanelen kattints az Szolgáltatások hozzáadása gombra.
-
 Tovább → Telepítés
-
 Tartományvezérlővé alakítás:
-
 Telepítés után kattints a Sárga zászlóra (jobb felső sarok) → Ez a szerver tartományvezérlővé alakítása
-
 Új erdő létrehozása:
-
 Válaszd: Új erdő hozzáadása
-
 Gyökértartomány neve: pl. ceg.local
-
 Jelszó beállítása a szolgáltatás-helyreállításhoz → Tovább → Telepítés
-
 Újraindítás után: A szerver tagja lesz a tartománynak, és tartományvezérlőként működik.
 
 2.  Felhasználók és csoportok létrehozása
 Lépések:
 Start menü → Eszközök → Active Directory – felhasználók és számítógépek
-
 Navigálj a Users (Felhasználók) tárolóhoz.
-
 Új felhasználó:
-
 Jobb klikk → Új → Felhasználó
-
 Név: teszt.janos
-
 Bejelentkezési név: teszt.janos@ceg.local
-
 Állíts be jelszót, és vedd ki a pipát a „Felhasználó meg kell, hogy változtassa a jelszót az első bejelentkezéskor” opcióból, ha szükséges.
-
 Új csoport:
-
 Jobb klikk → Új → Csoport
-
 Név: irodaiak
-
 Típus: Biztonsági
-
 Felhasználó csoporthoz adása:
-
 Jobb klikk a felhasználóra → Tulajdonságok → Tagja fül → Hozzáadás → irodaiak
 
 3.  Csoportházirend létrehozása és alkalmazása
 Lépések:
 Start → Eszközök → Csoportházirend-kezelés
-
 Navigálj a ceg.local tartományhoz.
-
 Új GPO létrehozása:
-
 Jobb klikk a tartományon → Új létrehozása
-
 Név: Irodai korlátozások
-
 GPO szerkesztése:
-
 Jobb klikk → Szerkesztés
-
 Példa: Felhasználói beállítások → Vezérlőpult → Megjelenés → Rejtse el a Vezérlőpultot
-
 GPO linkelése csoporthoz (opcionális):
-
 A GPO csak az irodaiak csoportra vonatkozzon: használj biztonsági szűrést vagy WMI-szűrőt.
 
 4. DHCP és DNS szolgáltatások konfigurálása
 DHCP:
 Szerepkör hozzáadása:
-
 Szerverkezelő → Szerepkörök és szolgáltatások hozzáadása
-
 DHCP-szolgáltatás → Telepítés
-
 DHCP-kezelő megnyitása:
-
 Start → Eszközök → DHCP
-
 Új tartomány (scope) létrehozása:
-
 Jobb klikk az IPv4-re → Új tartomány
-
 Tartománynév: HelyiLAN
-
 IP-címtartomány: pl. 192.168.1.100–192.168.1.200
-
 Alhálózati maszk: 255.255.255.0
-
 Átjáró: 192.168.1.1
-
 DNS kiszolgáló: 192.168.1.10 (ez a gép IP-je)
-
 DNS:
 A telepítés után automatikusan telepítve lett.
-
 DNS-kezelő → Start → Eszközök → DNS
-
 Ellenőrizd, hogy a tartományhoz tartozó elő- és visszafeloldási zónák létrejöttek-e.
-
 Szükség esetén hozz létre új A rekordot vagy CNAME bejegyzést.
 
 5.  PowerShell szkript felhasználók létrehozására
 Nyisd meg a PowerShellt rendszergazdaként, majd készítsd el a következő szkriptet:
-
 powershell
-
 # Active Directory modul betöltése
 Import-Module ActiveDirectory
-
 # Felhasználó létrehozása
 New-ADUser -Name "teszt" -UserPrincipalName "teszt@example.com" -AccountPassword (ConvertTo-SecureString "titok123!" -AsPlainText -Force) -Enabled $true
-
- 
 Mentheted .ps1 fájlba, majd futtasd rendszergazdaként.
-
 Magyarázat:
 New-ADUser – új felhasználó létrehozása
-
 -Name "teszt" – ez lesz a megjelenített név és a SamAccountName is
-
 -AccountPassword – beállítja a jelszót (itt: Jelszo123!)
-
 -Enabled $true – azonnal aktiválja a felhasználót
 
 6.  Egyszerű VPN-szolgáltatás telepítése és konfigurálása
- 
-
 VPN feladat (PPTP – Windows Server 2019)
  Feladat:
 Állíts be egy egyszerű VPN-kiszolgálót, amely egyetlen tartományi felhasználónak biztosít távoli hozzáférést a hálózathoz PPTP protokollon keresztül.
-
  Szükséges gépek:
 1 db Windows Server 2019 (tartományvezérlőként működik)
-
 1 db Windows 10 kliens (tartományon kívüli, sima gép)
-
  Lépések 
  Remote Access szerepkör telepítése:
 Server Manager → Szerepkörök és szolgáltatások hozzáadása
-
 Válaszd a Remote Access szerepkört
-
 A szolgáltatások közül csak:  DirectAccess and VPN (RAS)
-
 Továbblépsz, és Telepítés
-
  VPN engedélyezése RRAS-szal:
 Server Manager → Eszközök → Routing and Remote Access
-
 Jobb klikk a szervernévre → Konfigurálás és engedélyezés
-
 Válaszd: Egyéni konfiguráció →  VPN hozzáférés
-
 Befejezés után indítsd újra az RRAS-t, ha kéri
-
  Engedélyezd a felhasználónak a VPN használatot:
 Active Directory Users and Computers → jobb klikk egy felhasználón (pl. teszt)
-
 Tulajdonságok → Tárcsázás fül →  Hozzáférés engedélyezése
-
  IP-címtartomány a VPN klienseknek:
 Routing and Remote Access konzol → jobb klikk a szervernévre → Tulajdonságok
-
 IPv4 fül → válaszd a Statikus címkészlet lehetőséget
-
 Adj meg egy kis tartományt (pl. 192.168.10.10 – 192.168.10.20)
-
 Tűzfal (ha szükséges):
 Ha kliens nem tud csatlakozni: nyisd meg a Windows Defender tűzfal (haladó beállítások) panelt
-
 Engedélyezd: PPTP – TCP 1723
-
 NAT esetén a VirtualBox-ban is legyen port forward
-
  Kliens oldali VPN (Windows 10/11 gépen):
 Gépház → Hálózat és internet → VPN → VPN kapcsolat hozzáadása
-
 VPN típus: PPTP
-
 Szerver címe: a szerver NAT IP-je (pl. 10.0.2.15)
-
 Hitelesítés: teszt felhasználó és jelszó
-
 Csatlakozás → ellenőrzés
