@@ -21,3 +21,156 @@ Az oldal szerkesztőben:
 <h1>Hello World dátum</h1>
 <p>Készítette: Balog Ádám</p>
 
+---sources.list---
+ nano /etc/apt/sources.list
+
+---ftp---
+apt install vsftpd
+
+mkdir -p /srv/ftp/nyomtatvanyok
+ chown -R ftp:ftp /srv/ftp/nyomtatvanyok
+ chmod 755 /srv/ftp/nyomtatvanyok
+
+ nano /etc/proftpd/proftpd.conf
+
+csatolas--\\ipcim\mappa
+
+<Anonymous /srv/ftp/nyomtatvanyok>
+  User                ftpuser	
+  Group               ftpusers
+  UserAlias           anonymous ftp
+  <Limit LOGIN>
+    AllowAll
+  </Limit>
+  <Directory *>
+    <Limit WRITE>
+      DenyAll
+    </Limit>
+  </Directory>
+</Anonymous>
+
+
+---samba---
+apt install samba smbclient cifs-utils
+
+ groupadd dolgozok
+ usermod -aG dolgozok felhasznalo1
+ usermod -aG dolgozok felhasznalo2
+
+nano /etc/samba/smb.conf
+
+[dolgozok]
+   path = /srv/samba/dolgozok
+   valid users = @dolgozok
+   read only = no
+   force group = dolgozok
+   create mask = 0660
+   directory mask = 2770
+   guest ok = no
+
+ smbpasswd -a felhasznalo1
+smbpasswd -a felhasznalo2
+
+
+
+---php install ---
+
+		apt install php libapache2-mod-php php-mysql -y
+		php -v
+---apache2---
+
+apt install apache2
+
+-----------------------------------
+/conf file/
+	
+/etc/apache2/apache2.conf
+
+/etc/apache2/sites-available/000-default.conf
+
+----------------------------
+
+sudo mkdir -p /enweboldalam/html
+
+---------------------------------------
+---VirtualHost conf---
+
+DocumentRoot /enweboldalam/html
+<Directory /enweboldalam/html>
+    AllowOverride All
+    Require all granted
+</Directory>
+-----------------------------------------------
+addgroup valamigroup
+adduser valami
+usermod -a -G valamigroup valami
+sudo chown -R www-data:engroupom /enweboldalam/html
+sudo chmod -R 2775 /enwebdolalam/html
+
+
+-----------------------------------------------------
+	
+
+
+
+--------------------------------
+
+----isc-dhcp-server----
+/conf file/
+		/etc/dhcp/dhcp.conf
+
+		subnet mask {
+		range;
+		option routers ;
+		option subnet mask;
+		option domain-name-servers;
+		default-lease-time;
+		}
+
+		/etc/default/isc-dhcp-server
+
+		interface beallitas
+----------------------------------------------
+----KEA dhcp server------
+sudo apt install kea-dhcp4-server
+sudo nano /etc/kea/kea-dhcp4.conf
+
+{
+  "Dhcp4": {
+    "interfaces-config": {"interfaces": ["eth1"]},
+    "subnet4": [{
+      "subnet": "192.168.1.0/24",
+      "pools": [{"pool": "192.168.1.100 - 192.168.1.101"}],
+      "option-data": [{"name": "routers","data": "192.168.1.1"}]
+    }]
+  }
+}
+
+sudo systemctl restart kea-dhcp4-server
+
+
+
+----docker----
+
+sudo apt-get update
+sudo apt-get install ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+---------------------------------------------------------------------------------------------
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+-----------------------------------------------------------------------------------------------------
+docker ps
+--------------------------------------
+----portainer----
+
+docker volume create portainer_data
+
+docker run -d -p 8000:8000 -p 9443:9443 --name portainer --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer-ce:lts
+---------------------------------------------------------------------------------------------------
