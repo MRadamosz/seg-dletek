@@ -28,289 +28,169 @@ nameif inside → ez jelzi, hogy ez a belső (biztonságos) interfész.
 security-level 100 → a legmagasabb biztonsági szint, belső forgalom engedélyezett.
 ip address → a VLAN1 címe.
 
-c. DHCP beállítása a belső hálózatra:
+1. VLAN-ok használata, VLAN-ok közti forgalomirányítás 
+Switch(config)# vlan 10 
+Switch(config-vlan)# name HR 
+Switch(config)# interface fastEthernet 0/1 
+Switch(config-if)# switchport mode access 
+Switch(config-if)# switchport access vlan 10 
+Switch(config)# interface fa0/24 
+Switch(config-if)# switchport mode trunk 
+Switch(config-if)# switchport trunk allowed vlan 10,20,30 
+Router(config)# interface g0/0.10 
+Router(config-subif)# encapsulation dot1Q 10 
+Router(config-subif)# ip address 192.168.10.1 255.255.255.0 
+Router(config)# interface g0/0.20 
+Router(config-subif)# encapsulation dot1Q 20 
+Router(config-subif)# ip address 192.168.20.1 255.255.255.0 
 
-ciscoasa(config)# dhcpd address 10.10.0.120-10.10.0.140 inside
-ciscoasa(config)# dhcpd dns 192.168.100.120
-ciscoasa(config)# dhcpd enable inside
-Miért?
-Ez kiosztja a belső klienseknek a megadott IP-tartományból IP-címeket és DNS szerver címet.
+2. Második rétegbeli redundancia 
+Switch(config)# spanning-tree mode rapid-pvst 
+Switch(config)# spanning-tree vlan 1 priority 4096 
+Switch(config)# interface fa0/1 
+Switch(config-if)# spanning-tree portfast 
+Switch(config-if)# spanning-tree bpduguard enable 
 
-d. Külső interfész (outside):
-Feltételezve, hogy ez az Ethernet0/0:
+3. Dinamikus címkiosztás IPv4 környezetben 
+Router(config)# ip dhcp pool LAN1 
+Router(dhcp-config)# network 192.168.1.0 255.255.255.0 
+Router(dhcp-config)# default-router 192.168.1.1 
+Router(dhcp-config)# dns-server 8.8.8.8 
+Router(config)# ip dhcp excluded-address 192.168.1.1 192.168.1.10 4. IPv6 címzés és dinamikus címkiosztás IPv6 környezetben
+Router(config)# ipv6 unicast-routing 
+Router(config)# interface g0/0 
+Router(config-if)# ipv6 address 2001:db8:1::1/64 Router(config-if)# ipv6 enable 
+Router(config)# ipv6 dhcp pool DHCPv6POOL Router(config-dhcpv6)# address prefix 2001:db8:1::/64 Router(config-dhcpv6)# dns-server 2001:4860:4860::8888 Router(config)# interface g0/0 
+Router(config-if)# ipv6 dhcp server DHCPv6POOL Router(config-if)# ipv6 nd other-config-flag 
 
-ciscoasa(config)# interface Ethernet0/0
-ciscoasa(config-if)# nameif outside
-ciscoasa(config-if)# security-level 0
-ciscoasa(config-if)# ip address 192.168.TSZ.X 255.255.255.0
-ciscoasa(config-if)# no shutdown
-(X = 10 + GSZ) → ez egy adott tanulói szám vagy gépszám.
+4. IPv6 címzés és dinamikus címkiosztás IPv6 környezetben
+Router(config)# ipv6 unicast-routing 
+Router(config)# interface g0/0 
+Router(config-if)# ipv6 address 2001:db8:1::1/64 Router(config-if)# ipv6 enable 
+Router(config)# ipv6 dhcp pool DHCPv6POOL Router(config-dhcpv6)# address prefix 2001:db8:1::/64 Router(config-dhcpv6)# dns-server 2001:4860:4860::8888 Router(config)# interface g0/0 
+Router(config-if)# ipv6 dhcp server DHCPv6POOL Router(config-if)# ipv6 nd other-config-flag 
 
-Miért?
+5. Harmadik rétegbeli redundancia 
+Router(config)# interface g0/0 
+Router(config-if)# ip address 192.168.1.2 255.255.255.0 Router(config-if)# standby 1 ip 192.168.1.1 
+Router(config-if)# standby 1 priority 110 
+Router(config-if)# standby 1 preempt
 
-outside interfész → internet felőli, nem biztonságos.
-
-security-level 0 → legkevésbé megbízható.
-
-ip address → a VLAN2 címe.
-
-e. Alapértelmezett útvonal beállítása:
-
-ciscoasa(config)# route outside 0.0.0.0 0.0.0.0 192.168.TSZ.1
-Miért?
-Ez az útvonal biztosítja, hogy a tűzfal minden, nem helyi címre küldött csomagot a külső hálózat felé (internet) irányítsa.
-
-2. SOHO router konfigurálása
-a. Internet port DHCP-vel:
-Ez általában automatikus, de így is be lehet állítani:
-
-interface WAN
-ip address dhcp
-Miért?
-Hogy a WAN interfész automatikusan kapjon IP-t a szolgáltatótól.
-
-b. LAN IP-címtartomány:
-
-interface LAN
-ip address 192.168.VSZ.111 255.255.255.0
-
-c. DHCP tartomány:
-
-ip dhcp pool LANPOOL
-network 192.168.VSZ.0 255.255.255.0
-default-router 192.168.VSZ.111
-ip dhcp excluded-address 192.168.VSZ.1 192.168.VSZ.49
-ip dhcp excluded-address 192.168.VSZ.66 192.168.VSZ.254
-
-d. Wi-Fi SSID és biztonság:
-SSID: BMSzCVizsgaVSZ
-WPA2-PSK AES titkosítással, jelszó: PasswordBMSzCVSZ
-
-Általában GUI-n vagy így CLI-ben (függ a gyártótól):
-
-interface Dot11Radio0
-ssid BMSzCVizsgaVSZ
-authentication open
-authentication key-management wpa version 2
-wpa-psk ascii PasswordBMSzCVSZ
-encryption mode ciphers aes-ccm
-
-3. Switch konfiguráció
-a. Hostnév + konzol jelszó:
-
-Switch(config)# hostname Vezetekneve
-Vezetekneve(config)# line console 0
-Vezetekneve(config-line)# password BMSzCVizsga
-Vezetekneve(config-line)# login
-
-b. Nem használt portok VLAN 77-be:
-Feltételezve, hogy pl. fa0/5-től fa0/24 nem használt:
-
-interface range fa0/5 - 24
-switchport mode access
-switchport access vlan 77
-shutdown
-c. Használt portok VLAN1-ben maradnak → nincs külön teendő, ez alapértelmezett.
-
-d. VLAN1 IP-cím beállítás:
-
-interface vlan 1
-ip address 192.168.VSZ.120 255.255.255.0
-no shutdown
-e. Alapértelmezett átjáró:
-
-ip default-gateway 192.168.VSZ.1
-
-f. Felhasználó hozzáadása:
-
-username admin password Pataky
-
-g. IP domainnév:
-
-ip domain-name pataky.lan
-
-h. RSA kulcs SSH-hoz:
-
+6. Hálózatbiztonság, kapcsoló biztonságossá tétele
+enable secret erosjelszo
+service password-encryption
+login block-for 60 attempts 3 within 30
+line vty 0 4
+ login local
+ transport input ssh
+ip domain-name example.com
 crypto key generate rsa
-1024
+username admin secret jelszo123
 
-i. SSH vonalak konfigurálása:
+interface fa0/1
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation shutdown
+ switchport port-security mac-address sticky
 
-line vty 0 4
-login local
-transport input ssh
 
-ACL minden IP-cím engedélyezésére:
+7. Vezeték nélküli technológiák
+interface Dot11Radio0
+ssid VendegHalozat
+ authentication open
+ key-management wpa version 2
+ wpa-psk ascii 0 vendegjelszo
 
-access-list 1 permit any
+8. Forgalomirányítási alapok, statikus forgalomirányítás
+ip route 10.0.0.0 255.255.255.0 192.168.1.2
 
-NAT beállítás:
+9. Dinamikus forgalomirányítási ismeretek (OSPF példával)
+router ospf 1
+ network 192.168.1.0 0.0.0.255 area 0
 
+10. Hálózatbiztonság (ACL-ekkel)
+access-list 100 permit tcp any host 192.168.1.10 eq 80
+access-list 100 deny ip any any
+interface g0/0
+ ip access-group 100 in
+
+11. Hozzáférési listák használata
+access-list 1 permit 192.168.1.0 0.0.0.255
+interface g0/0
+ ip access-group 1 out
+
+12. Statikus és dinamikus címfordítás lehetőségei (NAT)
+ip nat inside source static 192.168.1.100 203.0.113.10
+access-list 1 permit 192.168.1.0 0.0.0.255
 ip nat inside source list 1 interface g0/1 overload
-Interfészek NAT irányainak kijelölése:
-
-interface g0/0.10
-ip nat inside
-
-interface g0/0.20
-ip nat inside
-
+interface g0/0
+ ip nat inside
 interface g0/1
-ip nat outside
+ ip nat outside
 
-j. IPv6 forgalomirányítás bekapcsolása
+13. WAN technológiák (PPPoE)
+interface dialer1
+ encapsulation ppp
+ dialer pool 1
+ ppp chap hostname user
+ ppp chap password pass
 
-ipv6 unicast-routing
+interface Ethernet0
+ pppoe enable
+ pppoe-client dial-pool-number 1
 
-..vlan beállítás:
+14. Virtuális magánhálózat (VPN) kialakítása (GRE + IPsec)
+interface tunnel 0
+ ip address 10.10.10.1 255.255.255.0
+ tunnel source 192.168.1.1
+ tunnel destination 203.0.113.2
+ tunnel mode gre ip
 
-vlan 11
-name Pataky11
-exit
-interface range fa0/11 - 13
-switchport mode access
-switchport access vlan 11
+crypto isakmp policy 10
+ encryption aes
+ authentication pre-share
+crypto isakmp key VPNKEY address 203.0.113.2
 
-vlan 20
-name Pataky20
-exit
-interface range fa0/3 - 5
-switchport mode access
-switchport access vlan 20
+crypto ipsec transform-set VPN-SET esp-aes esp-sha-hmac
+crypto map VPN-MAP 10 ipsec-isakmp
+ set peer 203.0.113.2
+ set transform-set VPN-SET
+ match address 110
 
-..VTP:
-vtp domain MERETES
-vtp mode client
+interface g0/0
+ crypto map VPN-MAP
 
-vtp domain MERETES
-vtp mode server
+15. Minőségbiztosítási alapok, hálózatfelügyelet
+class-map match-all VOICE
+ match ip dscp ef
 
-EtherChannel passzív mód (PO2 csatorna)
+policy-map QOS-POLICY
+ class VOICE
+  priority percent 30
 
-interface range fa0/5 - 7
-channel-group 2 mode passive
+interface g0/0
+ service-policy output QOS-POLICY
 
-Bal oldal (Első) kapcsoló konfigurálása
-a. Készülék hosztneve + konzol jelszó
+snmp-server community public RO
+snmp-server location "Server Room"
+snmp-server contact admin@example.com
 
-hostname Vezetekneve-EGYIK
-line console 0
-password BMSzCVizsga
-login
+16. Hálózattervezés, hibaelhárítás
+show ip interface brief
+show running-config
+ping 8.8.8.8
+traceroute 8.8.8.8
+show cdp neighbors
+show arp
+debug ip packet
 
-b. VTP tartományneve NETWORK és kliens mód
+monitor session 1 source interface fa0/1
+monitor session 1 destination interface fa0/24
 
-vtp domain NETWORK
-vtp mode client
+17. Hálózat virtualizáció, hálózat automatizáció
+ip vrf HR
+ rd 100:1
+interface g0/1
+ ip vrf forwarding HR
+ ip address 192.168.10.1 255.255.255.0
 
-c. EtherChannel passzív mód (PO2 csatorna)
-
-interface range fa0/5 - 7
-channel-group 2 mode passive
-
-d. PO2 trönk üzemmódban 802.1q keretezéssel
-
-interface port-channel 2
-switchport mode trunk
-switchport trunk encapsulation dot1q
-
-e. Nem használt portok a 52-es VLAN-ban
-
-interface range fa0/1 - 4, fa0/8 - 24
-switchport mode access
-switchport access vlan 52
-shutdown
-f. VLAN20 interfész IP-címe
-
-Például ha VSZ = 10:
-
-interface vlan 20
-ip address 192.168.10.70 255.255.255.0
-no shutdown
-
-g. Alapértelmezett átjáró beállítása
-
-ip default-gateway 192.168.10.1
-
-h. Felhasználó létrehozása admin névvel és jelszóval
-
-username admin password BMSzC
-
-i. IP tartománynév beállítása
-
-ip domain-name pataky.lan
-
-j. RSA kulcs generálása az SSH protokollhoz
-
-crypto rsa general-keys modulus 1024
-
-k. Távadminisztrációs vonalak beállítása SSH-hoz
-
-line vty 0 4
-transport input ssh
-login local
-
-2. Jobb oldal (Második) kapcsoló konfigurálása
-a. Készülék hosztneve + konzol jelszó
-
-hostname Vezetekneve-MASIK
-line console 0
-password BMSzCVizsga
-login
-
-b. VTP tartományneve NETWORK és server mód
-
-vtp domain NETWORK
-vtp mode server
-
-c. EtherChannel aktív mód (PO5 csatorna)
-
-interface range fa0/15 - 17
-channel-group 5 mode active
-
-d. PO5 trönk üzemmódban 802.1q keretezéssel
-
-interface port-channel 5
-switchport mode trunk
-switchport trunk encapsulation dot1q
-
-e. Nem használt portok a 52-es VLAN-ban
-
-interface range fa0/1 - 2, fa0/8 - 24
-switchport mode access
-switchport access vlan 52
-shutdown
-f. VLAN20 interfész IP-címe
-
-Például ha VSZ = 10:
-
-interface vlan 20
-ip address 192.168.10.71 255.255.255.0
-no shutdown
-
-g. Alapértelmezett átjáró beállítása
-
-ip default-gateway 192.168.10.1
-
-h. VLAN-ok létrehozása és port-hozzárendelése
-
-vlan 10
-name Pataky10
-exit
-interface range fa0/11 - 13
-switchport mode access
-switchport access vlan 10
-
-vlan 20
-name Pataky20
-exit
-interface range fa0/3 - 5
-switchport mode access
-switchport access vlan 20
-i. Dinamikus címosztás beállítása (DHCP)
-Címkészlet létrehozása:
-
-ip dhcp pool dehacepe
-network 192.168.10.100 255.255.255.0
-default-router 192.168.10.1
-dns-server 192.168.100.120
