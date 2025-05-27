@@ -1,11 +1,40 @@
+---Ip beállítás---
+
+ip a -- megmutatja mi az ip cime a gépnek
+nano /etc/network/interfaces
+itt lehet beállítani az ip címet
+
+	dhcp --> static
+		address 192.168.1.10/24
+		gateway 192.168.1.1
+		dns-nameservers 8.8.8.8/ a dns szerver
+save ---> ctrl x --> y
+
+Ha at kell allitani a sources.list-et
+
 ---sources.list---
  nano /etc/apt/sources.list
+
+deb https://ftp.debian.org/debian/ bookworm contrib main non-free non-free-firmware
+# deb-src https://ftp.debian.org/debian/ bookworm contrib main non-free non-free-firmware
+
+deb https://ftp.debian.org/debian/ bookworm-updates contrib main non-free non-free-firmware
+# deb-src https://ftp.debian.org/debian/ bookworm-updates contrib main non-free non-free-firmware
+
+deb https://ftp.debian.org/debian/ bookworm-proposed-updates contrib main non-free non-free-firmware
+# deb-src https://ftp.debian.org/debian/ bookworm-proposed-updates contrib main non-free non-free-firmware
 
 ---ftp---
 apt install vsftpd
 
+Csinalsz egy mappat ami meg lesz osztva
+
 mkdir -p /srv/ftp/nyomtatvanyok
+
+adsz az ftp groupnak jogosultsagot hogy meg tudjak nyitni
  chown -R ftp:ftp /srv/ftp/nyomtatvanyok
+
+
  chmod 755 /srv/ftp/nyomtatvanyok
 
  nano /etc/proftpd/proftpd.conf
@@ -29,8 +58,12 @@ csatolas--\\ipcim\mappa
 
 ---samba---
 apt install samba smbclient cifs-utils
+group letrehozasa
 
  groupadd dolgozok
+felhasznalo letrehozasa
+adduser felhasznalo1----jelszo--stb
+felha
  usermod -aG dolgozok felhasznalo1
  usermod -aG dolgozok felhasznalo2
 
@@ -63,8 +96,15 @@ apt install apache2
 	
 /etc/apache2/apache2.conf
 
-/etc/apache2/sites-available/000-default.conf
+alap html file ----
+---> /var/www/html/index.html
 
+mv /var/www/html/index.html.orig
+
+nano /var/www/html/index.hu ----> html code ami kell pl Hello World
+
+
+/etc/apache2/sites-available/000-default.conf
 ----------------------------
 
 sudo mkdir -p /enweboldalam/html
@@ -80,6 +120,7 @@ DocumentRoot /enweboldalam/html
 -----------------------------------------------
 addgroup valamigroup
 adduser valami
+
 usermod -a -G valamigroup valami
 sudo chown -R www-data:engroupom /enweboldalam/html
 sudo chmod -R 2775 /enwebdolalam/html
